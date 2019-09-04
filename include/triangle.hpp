@@ -7,6 +7,7 @@ namespace triangle {
 
         private:
             void initVulkan();
+            void initWindow();
             void mainLoop();
             void cleanUp();
     };

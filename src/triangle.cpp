@@ -1,3 +1,5 @@
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 #include <triangle.hpp>
 
@@ -11,6 +13,10 @@ void TriangleApplication::run() {
 
 void TriangleApplication::initVulkan() {
     // Enter initialization code here
+}
+
+void TriangleApplication::initWindow() {
+    // Initialize the glfw window
 }
 
 void TriangleApplication::mainLoop() {
