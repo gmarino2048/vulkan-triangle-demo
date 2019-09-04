@@ -1,6 +1,3 @@
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include <triangle.hpp>
 
 using namespace triangle;
@@ -17,6 +14,7 @@ TriangleApplication::TriangleApplication(
 }
 
 void TriangleApplication::run() {
+    initWindow();
     initVulkan();
     mainLoop();
     cleanUp();
@@ -35,8 +33,7 @@ void TriangleApplication::initWindow() {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);   // Not resizeable
 
     // Create the window instance
-    GLFWwindow* window = nullptr;
-    window = glfwCreateWindow(
+    this->window = glfwCreateWindow(
         this->initialWindowWidth,
         this->initialWindowHeight,
         this->title.c_str(),
@@ -49,8 +46,14 @@ void TriangleApplication::initWindow() {
 
 void TriangleApplication::mainLoop() {
     // Enter main loop code here
+    while (!glfwWindowShouldClose(this->window)){
+        glfwPollEvents();
+    }
 }
 
 void TriangleApplication::cleanUp() {
     // Enter clean up code here
+    glfwDestroyWindow(this->window);
+
+    glfwTerminate();
 }
