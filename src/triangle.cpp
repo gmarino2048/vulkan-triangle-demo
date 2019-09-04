@@ -1,37 +1,22 @@
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
-
-#include <iostream>
 #include <triangle.hpp>
 
-int main(int, char**) {
-    glfwInit();
+using namespace triangle;
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    GLFWwindow* window = glfwCreateWindow(800, 600, 
-        "Vulkan Triangle Window", nullptr, nullptr);
+void TriangleApplication::run() {
+    initVulkan();
+    mainLoop();
+    cleanUp();
+}
 
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+void TriangleApplication::initVulkan() {
+    // Enter initialization code here
+}
 
-    std::cout << extensionCount << " extensions supported" << std::endl;
+void TriangleApplication::mainLoop() {
+    // Enter main loop code here
+}
 
-    glm::mat4 matrix;
-    glm::vec4 vec;
-    auto test = matrix * vec;
-
-    while(!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-    }
-
-    glfwDestroyWindow(window);
-
-    glfwTerminate();
-
-    return 0;
+void TriangleApplication::cleanUp() {
+    // Enter clean up code here
 }

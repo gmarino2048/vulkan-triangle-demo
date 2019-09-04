@@ -1,3 +1,13 @@
 #include<string>
 
-void println(std::string str);
+namespace triangle {
+    class TriangleApplication {
+        public:
+            void run();
+
+        private:
+            void initVulkan();
+            void mainLoop();
+            void cleanUp();
+    };
+}

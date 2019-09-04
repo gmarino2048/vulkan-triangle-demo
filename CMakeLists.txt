@@ -16,6 +16,7 @@ include_directories(
 
 add_executable(vulkan-triangle 
     src/triangle.cpp
+    src/main.cpp
 )
 
 target_link_libraries( vulkan-triangle
