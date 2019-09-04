@@ -1,5 +1,11 @@
 #include <iostream>
+#include <triangle.hpp>
 
 int main(int, char**) {
-    std::cout << "Hello, world!\n";
+    println("Hello World!");
+    println("My name is Guy!");
+}
+
+void println(std::string str) {
+    std::cout << str << "\n";
 }
