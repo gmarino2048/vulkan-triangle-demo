@@ -11,6 +11,7 @@ namespace triangle {
             int initialWindowHeight;
 
             GLFWwindow* window;
+            VkInstance vkInstance;
 
         public:
             TriangleApplication(
@@ -26,5 +27,7 @@ namespace triangle {
             void initWindow();
             void mainLoop();
             void cleanUp();
+
+            void createVkInstance();
     };
 }

@@ -22,6 +22,43 @@ void TriangleApplication::run() {
 
 void TriangleApplication::initVulkan() {
     // Enter initialization code here
+
+    // Create a vulkan instance
+    createVkInstance();
+}
+
+void TriangleApplication::createVkInstance() {
+    // Enumerate available extensions
+
+    // Give Vulkan some information (for optimization later)
+    VkApplicationInfo appInfo = {};
+    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.pApplicationName = this->title.c_str();
+    appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 0);
+    appInfo.pEngineName = "No Engine";
+    appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
+    appInfo.apiVersion = VK_API_VERSION_1_1;
+
+    // Create the information struct
+    VkInstanceCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    createInfo.pApplicationInfo = &appInfo;
+    createInfo.enabledLayerCount = 0;
+
+    // Get GLFW extensions
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    createInfo.enabledExtensionCount = glfwExtensionCount;
+    createInfo.ppEnabledExtensionNames = glfwExtensions;
+
+    // Create the Vulkan instance and check status
+    VkResult result = vkCreateInstance(&createInfo, nullptr, &this->vkInstance);
+
+    if (result != VK_SUCCESS){
+        throw std::runtime_error("Could not create Vulkan Instance");
+    }
 }
 
 void TriangleApplication::initWindow() {
@@ -40,8 +77,6 @@ void TriangleApplication::initWindow() {
         nullptr,
         nullptr
     );
-
-
 }
 
 void TriangleApplication::mainLoop() {
