@@ -17,6 +17,8 @@ namespace triangle {
             bool validationLayersEnabled;
             std::vector<const char*> validationLayers;
 
+            VkDebugUtilsMessengerEXT debugMessenger;
+
         public:
             TriangleApplication(
                 std::string title = "Triangle Application",
@@ -35,5 +37,27 @@ namespace triangle {
             void createVkInstance();
             bool checkValidationLayerSupport();
             std::vector<const char*> getRequiredExtensions();
+
+            void setupDebugMessenger();
+            void populateDebugMessengerCreateInfo(
+                VkDebugUtilsMessengerCreateInfoEXT& createInfo
+            );
+
+            VkResult createVkDebugMessenger(
+                const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                const VkAllocationCallbacks* pAllocator,
+                VkDebugUtilsMessengerEXT* pDebugMessenger
+            );
+            void destroyVkDebugMessenger(
+                const VkAllocationCallbacks* pAllocator = nullptr
+            );
+            
+
+            static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+                VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                VkDebugUtilsMessageTypeFlagsEXT messageType,
+                const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                void* pUserData
+            );
     };
 }
