@@ -1,3 +1,4 @@
+#include <map>
 #include <iostream>
 #include <triangle.hpp>
 
@@ -39,6 +40,9 @@ void TriangleApplication::initVulkan() {
 
     // Set up the debug layer
     setupDebugMessenger();
+
+    // Select the physical Device
+    pickPhysicalDevice();
 }
 
 void TriangleApplication::createVkInstance() {
@@ -196,6 +200,53 @@ void TriangleApplication::populateDebugMessengerCreateInfo(
         VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
     createInfo.pfnUserCallback = debugCallback;
     createInfo.pUserData = nullptr;
+}
+
+void TriangleApplication::pickPhysicalDevice(){
+    this->physicalDevice = VK_NULL_HANDLE;
+
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(this->vkInstance, &deviceCount, nullptr);
+
+    if (deviceCount == 0){
+        throw std::runtime_error("Failed to find any Vulkan-Compatible GPUs.");
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(this->vkInstance, &deviceCount, devices.data());
+
+    std::multimap<unsigned int, VkPhysicalDevice> candidates;
+    for (const auto& device : devices){
+        unsigned int score = rateDeviceSuitability(device);
+        candidates.insert(std::make_pair(score, device));
+    }
+
+    if (candidates.rbegin()->first > 0){
+        this->physicalDevice = candidates.rbegin()->second;
+    }
+    else {
+        throw std::runtime_error("Failed to find suitable GPU.");
+    }
+}
+
+unsigned int TriangleApplication::rateDeviceSuitability(const VkPhysicalDevice device){
+    VkPhysicalDeviceProperties deviceProperties;
+    VkPhysicalDeviceFeatures deviceFeatures;
+
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+    unsigned int score = 0;
+
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+        score += 1000;
+    
+    score += deviceProperties.limits.maxImageDimension2D;
+
+    std::cout << "Device: " << deviceProperties.deviceName << std::endl << 
+        "\tScore: " << score << std::endl;
+
+    return score;
 }
 
 void TriangleApplication::setupDebugMessenger(){

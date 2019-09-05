@@ -13,6 +13,7 @@ namespace triangle {
 
             GLFWwindow* window;
             VkInstance vkInstance;
+            VkPhysicalDevice physicalDevice;
 
             bool validationLayersEnabled;
             std::vector<const char*> validationLayers;
@@ -37,6 +38,9 @@ namespace triangle {
             void createVkInstance();
             bool checkValidationLayerSupport();
             std::vector<const char*> getRequiredExtensions();
+
+            void pickPhysicalDevice();
+            unsigned int rateDeviceSuitability(const VkPhysicalDevice device);
 
             void setupDebugMessenger();
             void populateDebugMessengerCreateInfo(
