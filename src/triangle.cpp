@@ -1,3 +1,5 @@
+#include <vector>
+#include <iostream>
 #include <triangle.hpp>
 
 using namespace triangle;
@@ -29,6 +31,19 @@ void TriangleApplication::initVulkan() {
 
 void TriangleApplication::createVkInstance() {
     // Enumerate available extensions
+    uint32_t vkInstanceExtensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &vkInstanceExtensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> extensions(vkInstanceExtensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &vkInstanceExtensionCount, extensions.data());
+
+    std::cout << "Available extensions:" << std::endl;
+
+    for (const auto& extension : extensions) {
+        std::cout << "\t" << extension.extensionName << std::endl;
+    }
+
+    std::cout.flush();
 
     // Give Vulkan some information (for optimization later)
     VkApplicationInfo appInfo = {};
@@ -88,6 +103,8 @@ void TriangleApplication::mainLoop() {
 
 void TriangleApplication::cleanUp() {
     // Enter clean up code here
+    vkDestroyInstance(this->vkInstance, nullptr);
+
     glfwDestroyWindow(this->window);
 
     glfwTerminate();
