@@ -43,12 +43,12 @@ void TriangleApplication::createVkInstance() {
     uint32_t vkInstanceExtensionCount = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &vkInstanceExtensionCount, nullptr);
 
-    std::vector<VkExtensionProperties> extensions(vkInstanceExtensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &vkInstanceExtensionCount, extensions.data());
+    std::vector<VkExtensionProperties> availableExtensions(vkInstanceExtensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &vkInstanceExtensionCount, availableExtensions.data());
 
     std::cout << "Available extensions:" << std::endl;
 
-    for (const auto& extension : extensions) {
+    for (const auto& extension : availableExtensions) {
         std::cout << "\t" << extension.extensionName << std::endl;
     }
 
@@ -72,15 +72,19 @@ void TriangleApplication::createVkInstance() {
     VkInstanceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
-    createInfo.enabledLayerCount = 0;
+    
+    if (this->validationLayersEnabled){
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInfo.ppEnabledLayerNames = validationLayers.data();
+    }
+    else {
+        createInfo.enabledLayerCount = 0;
+    }
 
     // Get GLFW extensions
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-    createInfo.enabledExtensionCount = glfwExtensionCount;
-    createInfo.ppEnabledExtensionNames = glfwExtensions;
+    auto extensions = getRequiredExtensions();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    createInfo.ppEnabledExtensionNames = extensions.data();
 
     // Create the Vulkan instance and check status
     VkResult result = vkCreateInstance(&createInfo, nullptr, &this->vkInstance);
@@ -147,4 +151,18 @@ bool TriangleApplication::checkValidationLayerSupport(){
     }
 
     return true;
+}
+
+std::vector<const char*> TriangleApplication::getRequiredExtensions() {
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+    if (this->validationLayersEnabled){
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+
+    return extensions;
 }

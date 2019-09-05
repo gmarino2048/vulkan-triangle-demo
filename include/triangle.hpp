@@ -34,5 +34,6 @@ namespace triangle {
 
             void createVkInstance();
             bool checkValidationLayerSupport();
+            std::vector<const char*> getRequiredExtensions();
     };
 }
