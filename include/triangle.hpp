@@ -1,7 +1,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include<string>
+#include <string>
+#include <vector>
 
 namespace triangle {
     class TriangleApplication {
@@ -12,6 +13,9 @@ namespace triangle {
 
             GLFWwindow* window;
             VkInstance vkInstance;
+
+            bool validationLayersEnabled;
+            std::vector<const char*> validationLayers;
 
         public:
             TriangleApplication(
@@ -29,5 +33,6 @@ namespace triangle {
             void cleanUp();
 
             void createVkInstance();
+            bool checkValidationLayerSupport();
     };
 }

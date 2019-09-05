@@ -1,4 +1,3 @@
-#include <vector>
 #include <iostream>
 #include <triangle.hpp>
 
@@ -13,6 +12,16 @@ TriangleApplication::TriangleApplication(
     
     this->initialWindowWidth = initialWidth;
     this->initialWindowHeight = initialHeight;
+
+    this->validationLayers = {
+        "VK_LAYER_KHRONOS_validation"
+    };
+
+#ifdef NDEBUG
+    this->validationLayersEnabled = false;
+#else
+    this->validationLayersEnabled = true;
+#endif
 }
 
 void TriangleApplication::run() {
@@ -44,6 +53,11 @@ void TriangleApplication::createVkInstance() {
     }
 
     std::cout.flush();
+
+    // Check for validation layer support
+    if (this->validationLayersEnabled && !checkValidationLayerSupport()){
+        throw std::runtime_error("Validation layers were requested, but they are unavailable.");
+    }
 
     // Give Vulkan some information (for optimization later)
     VkApplicationInfo appInfo = {};
@@ -108,4 +122,29 @@ void TriangleApplication::cleanUp() {
     glfwDestroyWindow(this->window);
 
     glfwTerminate();
+}
+
+bool TriangleApplication::checkValidationLayerSupport(){
+    uint32_t layerCount = 0;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const char* layer : this->validationLayers){
+        bool layerFound = false;
+
+        for (const auto& layerProperty : availableLayers){
+            if (strcmp(layer, layerProperty.layerName) == 0){
+                layerFound = true;
+                break;
+            }
+        }
+
+        if (!layerFound){
+            return false;
+        }
+    }
+
+    return true;
 }
