@@ -229,6 +229,10 @@ void TriangleApplication::pickPhysicalDevice(){
     }
 }
 
+bool TriangleApplication::QueueFamilyIndicies::isComplete(){
+    return graphicsFamily.has_value();
+}
+
 unsigned int TriangleApplication::rateDeviceSuitability(const VkPhysicalDevice device){
     VkPhysicalDeviceProperties deviceProperties;
     VkPhysicalDeviceFeatures deviceFeatures;
@@ -237,6 +241,9 @@ unsigned int TriangleApplication::rateDeviceSuitability(const VkPhysicalDevice d
     vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
     unsigned int score = 0;
+
+    QueueFamilyIndicies indicies = findQueueFamilies(device);
+    if(!indicies.isComplete()) return 0;
 
     if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
         score += 1000;
@@ -247,6 +254,29 @@ unsigned int TriangleApplication::rateDeviceSuitability(const VkPhysicalDevice d
         "\tScore: " << score << std::endl;
 
     return score;
+}
+
+TriangleApplication::QueueFamilyIndicies TriangleApplication::findQueueFamilies(VkPhysicalDevice device){
+    QueueFamilyIndicies indicies = {};
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies){
+        if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT){
+            indicies.graphicsFamily = i;
+        }
+
+        if (indicies.isComplete()) break;
+
+        i++;
+    }
+
+    return indicies;
 }
 
 void TriangleApplication::setupDebugMessenger(){

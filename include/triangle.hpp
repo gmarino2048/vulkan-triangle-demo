@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <optional>
 
 namespace triangle {
     class TriangleApplication {
@@ -41,6 +42,13 @@ namespace triangle {
 
             void pickPhysicalDevice();
             unsigned int rateDeviceSuitability(const VkPhysicalDevice device);
+
+            struct QueueFamilyIndicies {
+                std::optional<uint32_t> graphicsFamily;
+
+                bool isComplete();
+            };
+            QueueFamilyIndicies findQueueFamilies(VkPhysicalDevice device);
 
             void setupDebugMessenger();
             void populateDebugMessengerCreateInfo(
