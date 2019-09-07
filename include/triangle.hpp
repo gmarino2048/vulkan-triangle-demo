@@ -17,7 +17,9 @@ namespace triangle {
             VkDevice device;
             VkPhysicalDevice physicalDevice;
 
+            VkSurfaceKHR surface;
             VkQueue graphicsQueue;
+            VkQueue presentQueue;
 
             bool validationLayersEnabled;
             std::vector<const char*> validationLayers;
@@ -43,11 +45,14 @@ namespace triangle {
             bool checkValidationLayerSupport();
             std::vector<const char*> getRequiredExtensions();
 
+            void createSurface();
+
             void pickPhysicalDevice();
             unsigned int rateDeviceSuitability(const VkPhysicalDevice device);
 
             struct QueueFamilyIndicies {
                 std::optional<uint32_t> graphicsFamily;
+                std::optional<uint32_t> presentFamily;
 
                 bool isComplete();
             };

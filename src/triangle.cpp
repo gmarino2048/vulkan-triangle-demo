@@ -1,4 +1,5 @@
 #include <map>
+#include <set>
 #include <iostream>
 #include <triangle.hpp>
 
@@ -40,6 +41,9 @@ void TriangleApplication::initVulkan() {
 
     // Set up the debug layer
     setupDebugMessenger();
+
+    // Create the Vulkan Surface
+    createSurface();
 
     // Select the physical Device
     pickPhysicalDevice();
@@ -141,6 +145,9 @@ void TriangleApplication::cleanUp() {
     // Clean up the logical device
     vkDestroyDevice(this->device, nullptr);
     
+    // Clean up the surface instance
+    vkDestroySurfaceKHR(this->vkInstance, this->surface, nullptr);
+
     // Clean up debug messenger
     if (this->validationLayersEnabled){
         destroyVkDebugMessenger();
@@ -191,6 +198,19 @@ std::vector<const char*> TriangleApplication::getRequiredExtensions() {
     return extensions;
 }
 
+void TriangleApplication::createSurface(){
+    VkResult surfaceCreationResult = glfwCreateWindowSurface(
+        this->vkInstance,
+        this->window,
+        nullptr,
+        &this->surface
+    );
+
+    if (surfaceCreationResult != VK_SUCCESS){
+        throw std::runtime_error("Could not create window surface");
+    }
+}
+
 void TriangleApplication::populateDebugMessengerCreateInfo(
     VkDebugUtilsMessengerCreateInfoEXT& createInfo
 ){
@@ -236,7 +256,7 @@ void TriangleApplication::pickPhysicalDevice(){
 }
 
 bool TriangleApplication::QueueFamilyIndicies::isComplete(){
-    return graphicsFamily.has_value();
+    return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
 unsigned int TriangleApplication::rateDeviceSuitability(const VkPhysicalDevice device){
@@ -275,6 +295,13 @@ TriangleApplication::QueueFamilyIndicies TriangleApplication::findQueueFamilies(
     for (const auto& queueFamily : queueFamilies){
         if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT){
             indicies.graphicsFamily = i;
+        }
+
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, this->surface, &presentSupport);
+
+        if (queueFamily.queueCount > 0 && presentSupport){
+            indicies.presentFamily = i;
         }
 
         if (indicies.isComplete()) break;
@@ -327,20 +354,28 @@ VkResult TriangleApplication::createVkDebugMessenger(
 void TriangleApplication::createLogicalDevice(){
     QueueFamilyIndicies indicies = findQueueFamilies(physicalDevice);
 
-    VkDeviceQueueCreateInfo queueCreateInfo = {};
-    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = indicies.graphicsFamily.value();
-    queueCreateInfo.queueCount = 1;
+    std::vector<VkDeviceQueueCreateInfo> deviceQueueCreateInfos;
+    std::set<uint32_t> uniqueQueueFamilies = {
+        indicies.graphicsFamily.value(),
+        indicies.presentFamily.value()
+    };
 
     float queuePriority = 1.0f;
-    queueCreateInfo.pQueuePriorities = &queuePriority;
+    for (auto queueFamily : uniqueQueueFamilies) {
+        VkDeviceQueueCreateInfo queueCreateInfo = {};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = queueFamily;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+        deviceQueueCreateInfos.push_back(queueCreateInfo);
+    }
 
     VkPhysicalDeviceFeatures deviceFeatures = {}; // Everything is still VK_FALSE but we'll fix that later
 
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.pQueueCreateInfos = &queueCreateInfo;
-    createInfo.queueCreateInfoCount = 1;
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(deviceQueueCreateInfos.size());
+    createInfo.pQueueCreateInfos = deviceQueueCreateInfos.data();
     createInfo.pEnabledFeatures = &deviceFeatures;
 
     if (this->validationLayersEnabled) {
@@ -367,6 +402,13 @@ void TriangleApplication::createLogicalDevice(){
         indicies.graphicsFamily.value(),
         0,
         &this->graphicsQueue
+    );
+
+    vkGetDeviceQueue(
+        this->device,
+        indicies.presentFamily.value(),
+        0,
+        &this->presentQueue
     );
 }
 
