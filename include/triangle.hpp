@@ -17,6 +17,8 @@ namespace triangle {
             VkDevice device;
             VkPhysicalDevice physicalDevice;
 
+            std::vector<const char*> deviceExtensions;
+
             VkSurfaceKHR surface;
             VkQueue graphicsQueue;
             VkQueue presentQueue;
@@ -48,6 +50,7 @@ namespace triangle {
             void createSurface();
 
             void pickPhysicalDevice();
+            bool checkDeviceExtensionSupport(const VkPhysicalDevice device);
             unsigned int rateDeviceSuitability(const VkPhysicalDevice device);
 
             struct QueueFamilyIndicies {

@@ -3,6 +3,8 @@
 #include <iostream>
 #include <triangle.hpp>
 
+#define VK_STD_VALIDATION_LAYERS "VK_LAYER_KHRONOS_validation"
+
 using namespace triangle;
 
 TriangleApplication::TriangleApplication(
@@ -15,8 +17,12 @@ TriangleApplication::TriangleApplication(
     this->initialWindowWidth = initialWidth;
     this->initialWindowHeight = initialHeight;
 
+    this->deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+
     this->validationLayers = {
-        "VK_LAYER_KHRONOS_validation"
+        VK_STD_VALIDATION_LAYERS
     };
 
 #ifdef NDEBUG
@@ -259,6 +265,25 @@ bool TriangleApplication::QueueFamilyIndicies::isComplete(){
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
+bool TriangleApplication::checkDeviceExtensionSupport(const VkPhysicalDevice device){
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(
+        this->deviceExtensions.begin(),
+        this->deviceExtensions.end()
+    );
+
+    for (const auto& extension : availableExtensions) {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
+}
+
 unsigned int TriangleApplication::rateDeviceSuitability(const VkPhysicalDevice device){
     VkPhysicalDeviceProperties deviceProperties;
     VkPhysicalDeviceFeatures deviceFeatures;
@@ -269,7 +294,8 @@ unsigned int TriangleApplication::rateDeviceSuitability(const VkPhysicalDevice d
     unsigned int score = 0;
 
     QueueFamilyIndicies indicies = findQueueFamilies(device);
-    if(!indicies.isComplete()) return 0;
+    if(!indicies.isComplete() || !checkDeviceExtensionSupport(device)) 
+        return 0;
 
     if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
         score += 1000;
@@ -376,7 +402,11 @@ void TriangleApplication::createLogicalDevice(){
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(deviceQueueCreateInfos.size());
     createInfo.pQueueCreateInfos = deviceQueueCreateInfos.data();
+
     createInfo.pEnabledFeatures = &deviceFeatures;
+
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(this->deviceExtensions.size());
+    createInfo.ppEnabledExtensionNames = this->deviceExtensions.data();
 
     if (this->validationLayersEnabled) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(this->validationLayers.size());
