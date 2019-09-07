@@ -63,6 +63,13 @@ namespace triangle {
 
             void createLogicalDevice();
 
+            struct SwapChainSupportDetails{
+                VkSurfaceCapabilitiesKHR capabilities;
+                std::vector<VkSurfaceFormatKHR> formats;
+                std::vector<VkPresentModeKHR> presentModes;
+            };
+            SwapChainSupportDetails querySwapChainSupport(const VkPhysicalDevice device);
+
             void setupDebugMessenger();
             void populateDebugMessengerCreateInfo(
                 VkDebugUtilsMessengerCreateInfoEXT& createInfo

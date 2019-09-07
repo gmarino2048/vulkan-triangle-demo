@@ -294,7 +294,19 @@ unsigned int TriangleApplication::rateDeviceSuitability(const VkPhysicalDevice d
     unsigned int score = 0;
 
     QueueFamilyIndicies indicies = findQueueFamilies(device);
-    if(!indicies.isComplete() || !checkDeviceExtensionSupport(device)) 
+    bool extensionsSupported = checkDeviceExtensionSupport(device);
+
+    bool swapChainAdequate = false;
+    if (extensionsSupported) {
+        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+        swapChainAdequate = 
+            !swapChainSupport.formats.empty() &&
+            !swapChainSupport.presentModes.empty();
+    }
+
+    if(!indicies.isComplete() ||
+        !extensionsSupported  ||
+        !swapChainAdequate) 
         return 0;
 
     if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
@@ -440,6 +452,50 @@ void TriangleApplication::createLogicalDevice(){
         0,
         &this->presentQueue
     );
+}
+
+TriangleApplication::SwapChainSupportDetails TriangleApplication::querySwapChainSupport(const VkPhysicalDevice device){
+    SwapChainSupportDetails details;
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, this->surface, &details.capabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(
+        device,
+        this->surface,
+        &formatCount,
+        nullptr
+    );
+
+    if (formatCount > 0) {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(
+            device,
+            this->surface,
+            &formatCount,
+            details.formats.data()
+        );
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(
+        device,
+        this->surface,
+        &presentModeCount,
+        nullptr
+    );
+
+    if (presentModeCount > 0){
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(
+            device,
+            this->surface,
+            &presentModeCount,
+            details.presentModes.data()
+        );
+    }
+
+    return details;
 }
 
 void TriangleApplication::destroyVkDebugMessenger(
