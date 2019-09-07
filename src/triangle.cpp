@@ -361,6 +361,13 @@ void TriangleApplication::createLogicalDevice(){
     if (deviceCreationResult != VK_SUCCESS) {
         throw std::runtime_error("Failed to create logical device");
     }
+
+    vkGetDeviceQueue(
+        this->device,
+        indicies.graphicsFamily.value(),
+        0,
+        &this->graphicsQueue
+    );
 }
 
 void TriangleApplication::destroyVkDebugMessenger(

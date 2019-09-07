@@ -17,6 +17,8 @@ namespace triangle {
             VkDevice device;
             VkPhysicalDevice physicalDevice;
 
+            VkQueue graphicsQueue;
+
             bool validationLayersEnabled;
             std::vector<const char*> validationLayers;
 
