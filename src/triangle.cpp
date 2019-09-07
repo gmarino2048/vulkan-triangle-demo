@@ -43,6 +43,9 @@ void TriangleApplication::initVulkan() {
 
     // Select the physical Device
     pickPhysicalDevice();
+
+    // Create a logical device based on the physical devices
+    createLogicalDevice();
 }
 
 void TriangleApplication::createVkInstance() {
@@ -134,6 +137,9 @@ void TriangleApplication::mainLoop() {
 
 void TriangleApplication::cleanUp() {
     // Enter clean up code here
+
+    // Clean up the logical device
+    vkDestroyDevice(this->device, nullptr);
     
     // Clean up debug messenger
     if (this->validationLayersEnabled){
@@ -315,6 +321,45 @@ VkResult TriangleApplication::createVkDebugMessenger(
     }
     else{
         return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
+void TriangleApplication::createLogicalDevice(){
+    QueueFamilyIndicies indicies = findQueueFamilies(physicalDevice);
+
+    VkDeviceQueueCreateInfo queueCreateInfo = {};
+    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfo.queueFamilyIndex = indicies.graphicsFamily.value();
+    queueCreateInfo.queueCount = 1;
+
+    float queuePriority = 1.0f;
+    queueCreateInfo.pQueuePriorities = &queuePriority;
+
+    VkPhysicalDeviceFeatures deviceFeatures = {}; // Everything is still VK_FALSE but we'll fix that later
+
+    VkDeviceCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.pQueueCreateInfos = &queueCreateInfo;
+    createInfo.queueCreateInfoCount = 1;
+    createInfo.pEnabledFeatures = &deviceFeatures;
+
+    if (this->validationLayersEnabled) {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(this->validationLayers.size());
+        createInfo.ppEnabledLayerNames = this->validationLayers.data();
+    }
+    else {
+        createInfo.enabledLayerCount = 0;
+    }
+
+    VkResult deviceCreationResult = vkCreateDevice(
+        this->physicalDevice,
+        &createInfo,
+        nullptr,
+        &this->device
+    );
+
+    if (deviceCreationResult != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create logical device");
     }
 }
 

@@ -14,6 +14,7 @@ namespace triangle {
 
             GLFWwindow* window;
             VkInstance vkInstance;
+            VkDevice device;
             VkPhysicalDevice physicalDevice;
 
             bool validationLayersEnabled;
@@ -49,6 +50,8 @@ namespace triangle {
                 bool isComplete();
             };
             QueueFamilyIndicies findQueueFamilies(VkPhysicalDevice device);
+
+            void createLogicalDevice();
 
             void setupDebugMessenger();
             void populateDebugMessengerCreateInfo(
