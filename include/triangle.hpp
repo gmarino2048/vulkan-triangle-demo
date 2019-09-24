@@ -28,6 +28,8 @@ namespace triangle {
             VkFormat swapChainImageFormat;
             VkExtent2D swapChainImageExtent;
 
+            std::vector<VkImageView> swapChainImageViews;
+
             bool validationLayersEnabled;
             std::vector<const char*> validationLayers;
 
@@ -78,6 +80,8 @@ namespace triangle {
             VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
             VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
             VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+
+            void createImageViews();
 
             void setupDebugMessenger();
             void populateDebugMessengerCreateInfo(
