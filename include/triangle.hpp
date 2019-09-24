@@ -23,6 +23,11 @@ namespace triangle {
             VkQueue graphicsQueue;
             VkQueue presentQueue;
 
+            VkSwapchainKHR swapChain;
+            std::vector<VkImage> swapChainImages;
+            VkFormat swapChainImageFormat;
+            VkExtent2D swapChainImageExtent;
+
             bool validationLayersEnabled;
             std::vector<const char*> validationLayers;
 
@@ -63,12 +68,16 @@ namespace triangle {
 
             void createLogicalDevice();
 
+            void createSwapChain();
             struct SwapChainSupportDetails{
                 VkSurfaceCapabilitiesKHR capabilities;
                 std::vector<VkSurfaceFormatKHR> formats;
                 std::vector<VkPresentModeKHR> presentModes;
             };
             SwapChainSupportDetails querySwapChainSupport(const VkPhysicalDevice device);
+            VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+            VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+            VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
             void setupDebugMessenger();
             void populateDebugMessengerCreateInfo(
