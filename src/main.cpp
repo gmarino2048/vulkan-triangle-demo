@@ -9,7 +9,7 @@
 #include <iostream>
 #include <triangle.hpp>
 
-int main(int, char**) {
+int main(int argc, char** argv) {
     triangle::TriangleApplication app;
 
     try {

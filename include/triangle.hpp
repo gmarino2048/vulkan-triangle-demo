@@ -83,6 +83,8 @@ namespace triangle {
 
             void createImageViews();
 
+            std::vector<char> readFile(const std::string& filename);
+            VkShaderModule createShaderModule(const std::vector<char>& code);
             void createGraphicsPipeline();
 
             void setupDebugMessenger();

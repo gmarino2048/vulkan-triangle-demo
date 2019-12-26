@@ -2,7 +2,10 @@
 #include <set>
 #include <cstdint>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <algorithm>
+#include <filesystem>
 #include <triangle.hpp>
 
 #define VK_STD_VALIDATION_LAYERS "VK_LAYER_KHRONOS_validation"
@@ -674,8 +677,67 @@ void TriangleApplication::createImageViews(){
     }
 }
 
-void TriangleApplication::createGraphicsPipeline() {
+std::vector<char> TriangleApplication::readFile(const std::string& filename){
 
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()){
+        std::stringstream ss;
+        ss << "Failed to open file: " << filename;
+        throw std::runtime_error(ss.str());
+    }
+
+    size_t fileSize = (size_t) file.tellg();
+    std::vector<char> buffer(fileSize);
+
+    file.seekg(0);
+    file.read(buffer.data(), fileSize);
+
+    file.close();
+    return buffer;
+}
+
+VkShaderModule TriangleApplication::createShaderModule(const std::vector<char>& code){
+    VkShaderModuleCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize = code.size();
+    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+    VkShaderModule shaderModule;
+    if(vkCreateShaderModule(this->device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create shader module!");
+    }
+
+    return shaderModule;
+}
+
+// Set the output path of the shaders here
+const char* frag_shader = "shaders/triangle.frag.spv";
+const char* vert_shader = "shaders/triangle.vert.spv";
+
+void TriangleApplication::createGraphicsPipeline() {
+    auto fragShaderCode = readFile(frag_shader);
+    auto vertShaderCode = readFile(vert_shader);
+
+    VkShaderModule vertShaderModule = this->createShaderModule(vertShaderCode);
+    VkShaderModule fragShaderModule = this->createShaderModule(fragShaderCode);
+
+    VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
+    vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vertShaderStageInfo.module = vertShaderModule;
+    vertShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
+    fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragShaderStageInfo.module = fragShaderModule;
+    fragShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+
+    vkDestroyShaderModule(this->device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(this->device, vertShaderModule, nullptr);
 }
 
 void TriangleApplication::destroyVkDebugMessenger(
