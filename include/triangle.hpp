@@ -83,6 +83,8 @@ namespace triangle {
 
             void createImageViews();
 
+            void createGraphicsPipeline();
+
             void setupDebugMessenger();
             void populateDebugMessengerCreateInfo(
                 VkDebugUtilsMessengerCreateInfoEXT& createInfo

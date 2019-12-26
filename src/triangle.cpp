@@ -64,6 +64,9 @@ void TriangleApplication::initVulkan() {
 
     // Create the swapchain image views
     createImageViews();
+
+    // Create the graphics pipeline
+    createGraphicsPipeline();
 }
 
 void TriangleApplication::createVkInstance() {
@@ -669,6 +672,10 @@ void TriangleApplication::createImageViews(){
             throw std::runtime_error("Failed to create swapchain views");
         }
     }
+}
+
+void TriangleApplication::createGraphicsPipeline() {
+
 }
 
 void TriangleApplication::destroyVkDebugMessenger(
