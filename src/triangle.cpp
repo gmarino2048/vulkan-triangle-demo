@@ -76,6 +76,12 @@ void TriangleApplication::initVulkan() {
 
     // Create Framebuffers
     createFrameBuffers();
+
+    // Create the drawing command pool
+    createCommandPool();
+
+    // Create the command buffers
+    createCommandBuffers();
 }
 
 void TriangleApplication::createVkInstance() {
@@ -167,6 +173,9 @@ void TriangleApplication::mainLoop() {
 
 void TriangleApplication::cleanUp() {
     // Enter clean up code here
+
+    // Clean up the command pool
+    vkDestroyCommandPool(this->device, this->commandPool, nullptr);
 
     // Clean up the framebuffers
     for (auto framebuffer : this->swapChainFramebuffers){
@@ -933,6 +942,64 @@ void TriangleApplication::createFrameBuffers(){
             throw std::runtime_error("Failed to create framebuffer");
         }
     }
+}
+
+void TriangleApplication::createCommandPool(){
+    QueueFamilyIndicies queueFamilyIndices = findQueueFamilies(this->physicalDevice);
+
+    VkCommandPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+    poolInfo.flags = 0;
+
+    if(vkCreateCommandPool(this->device, &poolInfo, nullptr, &this->commandPool) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create command pool");
+    }
+}
+
+void TriangleApplication::createCommandBuffers(){
+    this->commandBuffers.resize(this->swapChainFramebuffers.size());
+
+    VkCommandBufferAllocateInfo allocateInfo = {};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocateInfo.commandPool = this->commandPool;
+    allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocateInfo.commandBufferCount = (uint32_t) commandBuffers.size();
+
+    if(vkAllocateCommandBuffers(this->device, &allocateInfo, this->commandBuffers.data()) != VK_SUCCESS){
+        throw std::runtime_error("Failed to allocate command buffers");
+    }
+
+    for(size_t i = 0; i < this->commandBuffers.size(); i++){
+        VkCommandBufferBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0;
+        beginInfo.pInheritanceInfo = nullptr;
+
+        if(vkBeginCommandBuffer(this->commandBuffers[i], &beginInfo) != VK_SUCCESS){
+            throw std::runtime_error("Failed to begin recording command buffer");
+        }
+
+        VkRenderPassBeginInfo renderPassInfo = {};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = this->renderPass;
+        renderPassInfo.framebuffer = this->swapChainFramebuffers[i];
+        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.extent = this->swapChainImageExtent;
+
+        VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+        renderPassInfo.clearValueCount = 1;
+        renderPassInfo.pClearValues = &clearColor;
+
+        vkCmdBeginRenderPass(this->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBindPipeline(this->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphicsPipeline);
+        vkCmdDraw(this->commandBuffers[i], 3, 1, 0, 0);
+
+        vkCmdEndRenderPass(this->commandBuffers[i]);
+        if(vkEndCommandBuffer(this->commandBuffers[i]) != VK_SUCCESS){
+            throw std::runtime_error("Failed to record command buffer!");
+        }
+    }  
 }
 
 void TriangleApplication::destroyVkDebugMessenger(

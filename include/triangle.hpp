@@ -36,6 +36,9 @@ namespace triangle {
 
             std::vector<VkFramebuffer> swapChainFramebuffers;
 
+            VkCommandPool commandPool;
+            std::vector<VkCommandBuffer> commandBuffers;
+
             bool validationLayersEnabled;
             std::vector<const char*> validationLayers;
 
@@ -96,6 +99,9 @@ namespace triangle {
             void createGraphicsPipeline();
 
             void createFrameBuffers();
+
+            void createCommandPool();
+            void createCommandBuffers();
 
             void setupDebugMessenger();
             void populateDebugMessengerCreateInfo(
