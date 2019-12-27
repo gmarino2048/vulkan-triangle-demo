@@ -32,6 +32,7 @@ namespace triangle {
 
             VkRenderPass renderPass;
             VkPipelineLayout pipelineLayout;
+            VkPipeline graphicsPipeline;
 
             bool validationLayersEnabled;
             std::vector<const char*> validationLayers;

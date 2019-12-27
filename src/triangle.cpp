@@ -165,6 +165,9 @@ void TriangleApplication::mainLoop() {
 void TriangleApplication::cleanUp() {
     // Enter clean up code here
 
+    // Clean up the graphics pipeline
+    vkDestroyPipeline(this->device, this->graphicsPipeline, nullptr);
+
     // Clean up the graphics pipeline layout
     vkDestroyPipelineLayout(this->device, this->pipelineLayout, nullptr);
 
@@ -871,6 +874,30 @@ void TriangleApplication::createGraphicsPipeline() {
 
     if(vkCreatePipelineLayout(this->device, &pipelineLayoutInfo, nullptr, &this->pipelineLayout) != VK_SUCCESS){
         throw std::runtime_error("Failed to create pipeline layout!");
+    }
+
+    VkGraphicsPipelineCreateInfo pipelineInfo = {};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount = 2;
+    pipelineInfo.pStages = shaderStages;
+    pipelineInfo.pVertexInputState = &vertexStateCreateInfo;
+    pipelineInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
+    pipelineInfo.pViewportState = &viewportStateCreateInfo;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisampling;
+    pipelineInfo.pDepthStencilState = nullptr;
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pDynamicState = &dynamicState; // Divergence from tutorial
+    
+    pipelineInfo.layout = this->pipelineLayout;
+    pipelineInfo.renderPass = this->renderPass;
+    pipelineInfo.subpass = 0;
+
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+    pipelineInfo.basePipelineIndex = -1;
+
+    if(vkCreateGraphicsPipelines(this->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &this->graphicsPipeline) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create graphics pipeline!");
     }
 
     vkDestroyShaderModule(this->device, fragShaderModule, nullptr);
