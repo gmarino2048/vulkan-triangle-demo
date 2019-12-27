@@ -123,6 +123,7 @@ void TriangleApplication::drawFrame(){
     presentInfo.pResults = nullptr;
 
     vkQueuePresentKHR(this->presentQueue, &presentInfo);
+    vkQueueWaitIdle(this->presentQueue);
 }
 
 void TriangleApplication::createVkInstance() {
