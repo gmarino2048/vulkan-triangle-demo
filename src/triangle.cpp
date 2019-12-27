@@ -82,6 +82,47 @@ void TriangleApplication::initVulkan() {
 
     // Create the command buffers
     createCommandBuffers();
+
+    // Create the render semaphores
+    createSemaphores();
+}
+
+void TriangleApplication::drawFrame(){
+    uint32_t imageIndex;
+    vkAcquireNextImageKHR(this->device, this->swapChain, UINT64_MAX, this->imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkSemaphore waitSemaphores[] = {this->imageAvailableSemaphore};
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
+
+    VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if(vkQueueSubmit(this->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS){
+        throw std::runtime_error("Failed to submit queue!");
+    }
+
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+
+    VkSwapchainKHR swapChains[] = {this->swapChain};
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains;
+    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pResults = nullptr;
+
+    vkQueuePresentKHR(this->presentQueue, &presentInfo);
 }
 
 void TriangleApplication::createVkInstance() {
@@ -168,11 +209,18 @@ void TriangleApplication::mainLoop() {
     // Enter main loop code here
     while (!glfwWindowShouldClose(this->window)){
         glfwPollEvents();
+        drawFrame();
     }
+
+    vkDeviceWaitIdle(this->device);
 }
 
 void TriangleApplication::cleanUp() {
     // Enter clean up code here
+
+    // Clean up the semaphores
+    vkDestroySemaphore(this->device, this->imageAvailableSemaphore, nullptr);
+    vkDestroySemaphore(this->device, this->renderFinishedSemaphore, nullptr);
 
     // Clean up the command pool
     vkDestroyCommandPool(this->device, this->commandPool, nullptr);
@@ -767,6 +815,18 @@ void TriangleApplication::createRenderPass(){
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
 
+    VkSubpassDependency dependency = {};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = 
+        VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
+
     if(vkCreateRenderPass(this->device, &renderPassInfo, nullptr, &this->renderPass) != VK_SUCCESS){
         throw std::runtime_error("Failed to create render pass!");
     }
@@ -1000,6 +1060,18 @@ void TriangleApplication::createCommandBuffers(){
             throw std::runtime_error("Failed to record command buffer!");
         }
     }  
+}
+
+void TriangleApplication::createSemaphores(){
+    VkSemaphoreCreateInfo semInfo = {};
+    semInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkResult status1 = vkCreateSemaphore(this->device, &semInfo, nullptr, &this->imageAvailableSemaphore);
+    VkResult status2 = vkCreateSemaphore(this->device, &semInfo, nullptr, &this->renderFinishedSemaphore);
+
+    if(status1 != VK_SUCCESS || status2 != VK_SUCCESS){
+        throw std::runtime_error("Failed to create semaphores!");
+    }
 }
 
 void TriangleApplication::destroyVkDebugMessenger(

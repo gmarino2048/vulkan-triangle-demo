@@ -17,6 +17,9 @@ namespace triangle {
             VkDevice device;
             VkPhysicalDevice physicalDevice;
 
+            VkSemaphore imageAvailableSemaphore;
+            VkSemaphore renderFinishedSemaphore;
+
             std::vector<const char*> deviceExtensions;
 
             VkSurfaceKHR surface;
@@ -58,6 +61,8 @@ namespace triangle {
             void initWindow();
             void mainLoop();
             void cleanUp();
+
+            void drawFrame();
 
             void createVkInstance();
             bool checkValidationLayerSupport();
@@ -102,6 +107,8 @@ namespace triangle {
 
             void createCommandPool();
             void createCommandBuffers();
+
+            void createSemaphores();
 
             void setupDebugMessenger();
             void populateDebugMessengerCreateInfo(
