@@ -30,6 +30,7 @@ namespace triangle {
 
             std::vector<VkImageView> swapChainImageViews;
 
+            VkRenderPass renderPass;
             VkPipelineLayout pipelineLayout;
 
             bool validationLayersEnabled;
@@ -84,6 +85,8 @@ namespace triangle {
             VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
             void createImageViews();
+
+            void createRenderPass();
 
             std::vector<char> readFile(const std::string& filename);
             VkShaderModule createShaderModule(const std::vector<char>& code);
