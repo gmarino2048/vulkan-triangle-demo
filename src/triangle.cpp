@@ -15,8 +15,10 @@ using namespace triangle;
 TriangleApplication::TriangleApplication(
     std::string title,
     int initialWidth,
-    int initialHeight
+    int initialHeight,
+    int framesInFlight
 ) {
+    this->maxFramesInFlight = framesInFlight;
     this->title = title;
     
     this->initialWindowWidth = initialWidth;
@@ -25,6 +27,8 @@ TriangleApplication::TriangleApplication(
     this->deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
+
+    this->currentFrame = 0;
 
     this->validationLayers = {
         VK_STD_VALIDATION_LAYERS
@@ -84,17 +88,24 @@ void TriangleApplication::initVulkan() {
     createCommandBuffers();
 
     // Create the render semaphores
-    createSemaphores();
+    createSyncObjects();
 }
 
 void TriangleApplication::drawFrame(){
+    vkWaitForFences(this->device, 1, &this->inFlightFences[this->currentFrame], VK_TRUE, UINT64_MAX);
+
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(this->device, this->swapChain, UINT64_MAX, this->imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    vkAcquireNextImageKHR(this->device, this->swapChain, UINT64_MAX, this->imageAvailableSemaphores[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+    if(this->imagesInFlight[imageIndex] != VK_NULL_HANDLE){
+        vkWaitForFences(this->device, 1, &this->imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+    }
+    this->imagesInFlight[imageIndex] = this->inFlightFences[currentFrame];
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = {this->imageAvailableSemaphore};
+    VkSemaphore waitSemaphores[] = {this->imageAvailableSemaphores[this->currentFrame]};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
@@ -103,11 +114,13 @@ void TriangleApplication::drawFrame(){
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
 
-    VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+    VkSemaphore signalSemaphores[] = {this->renderFinishedSemaphores[this->currentFrame]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if(vkQueueSubmit(this->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS){
+    vkResetFences(this->device, 1, &this->inFlightFences[this->currentFrame]);
+
+    if(vkQueueSubmit(this->graphicsQueue, 1, &submitInfo, this->inFlightFences[this->currentFrame]) != VK_SUCCESS){
         throw std::runtime_error("Failed to submit queue!");
     }
 
@@ -124,6 +137,8 @@ void TriangleApplication::drawFrame(){
 
     vkQueuePresentKHR(this->presentQueue, &presentInfo);
     vkQueueWaitIdle(this->presentQueue);
+
+    this->currentFrame = (this->currentFrame + 1) % this->maxFramesInFlight;
 }
 
 void TriangleApplication::createVkInstance() {
@@ -220,8 +235,11 @@ void TriangleApplication::cleanUp() {
     // Enter clean up code here
 
     // Clean up the semaphores
-    vkDestroySemaphore(this->device, this->imageAvailableSemaphore, nullptr);
-    vkDestroySemaphore(this->device, this->renderFinishedSemaphore, nullptr);
+    for(size_t i = 0; i < this->maxFramesInFlight; i++){
+        vkDestroySemaphore(this->device, this->imageAvailableSemaphores[i], nullptr);
+        vkDestroySemaphore(this->device, this->renderFinishedSemaphores[i], nullptr);
+        vkDestroyFence(this->device, this->inFlightFences[i], nullptr);
+    }
 
     // Clean up the command pool
     vkDestroyCommandPool(this->device, this->commandPool, nullptr);
@@ -1063,15 +1081,27 @@ void TriangleApplication::createCommandBuffers(){
     }  
 }
 
-void TriangleApplication::createSemaphores(){
+void TriangleApplication::createSyncObjects(){
+    this->imageAvailableSemaphores.resize(this->maxFramesInFlight);
+    this->renderFinishedSemaphores.resize(this->maxFramesInFlight);
+    this->inFlightFences.resize(this->maxFramesInFlight);
+    this->imagesInFlight.resize(this->swapChainImages.size(), VK_NULL_HANDLE);
+
     VkSemaphoreCreateInfo semInfo = {};
     semInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    VkResult status1 = vkCreateSemaphore(this->device, &semInfo, nullptr, &this->imageAvailableSemaphore);
-    VkResult status2 = vkCreateSemaphore(this->device, &semInfo, nullptr, &this->renderFinishedSemaphore);
+    VkFenceCreateInfo fenceInfo = {};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    if(status1 != VK_SUCCESS || status2 != VK_SUCCESS){
-        throw std::runtime_error("Failed to create semaphores!");
+    for(size_t i = 0; i < this->maxFramesInFlight; i++){
+        VkResult status1 = vkCreateSemaphore(this->device, &semInfo, nullptr, &this->imageAvailableSemaphores[i]);
+        VkResult status2 = vkCreateSemaphore(this->device, &semInfo, nullptr, &this->renderFinishedSemaphores[i]);
+        VkResult status3 = vkCreateFence(this->device, &fenceInfo, nullptr, &this->inFlightFences[i]);
+        
+        if(status1 != VK_SUCCESS || status2 != VK_SUCCESS || status3 != VK_SUCCESS){
+            throw std::runtime_error("Failed to create sync objects!");
+        }
     }
 }
 

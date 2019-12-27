@@ -8,6 +8,7 @@
 namespace triangle {
     class TriangleApplication {
         private:
+            int maxFramesInFlight;
             std::string title;
             int initialWindowWidth;
             int initialWindowHeight;
@@ -17,8 +18,11 @@ namespace triangle {
             VkDevice device;
             VkPhysicalDevice physicalDevice;
 
-            VkSemaphore imageAvailableSemaphore;
-            VkSemaphore renderFinishedSemaphore;
+            std::vector<VkSemaphore> imageAvailableSemaphores;
+            std::vector<VkSemaphore> renderFinishedSemaphores;
+            std::vector<VkFence> inFlightFences;
+            std::vector<VkFence> imagesInFlight;
+            size_t currentFrame;
 
             std::vector<const char*> deviceExtensions;
 
@@ -51,7 +55,8 @@ namespace triangle {
             TriangleApplication(
                 std::string title = "Triangle Application",
                 int initialWidth = 800,
-                int initialHeight = 600
+                int initialHeight = 600,
+                int framesInFlight = 2
             );
 
             void run();
@@ -108,7 +113,7 @@ namespace triangle {
             void createCommandPool();
             void createCommandBuffers();
 
-            void createSemaphores();
+            void createSyncObjects();
 
             void setupDebugMessenger();
             void populateDebugMessengerCreateInfo(
