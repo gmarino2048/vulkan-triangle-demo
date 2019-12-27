@@ -73,6 +73,9 @@ void TriangleApplication::initVulkan() {
 
     // Create the graphics pipeline
     createGraphicsPipeline();
+
+    // Create Framebuffers
+    createFrameBuffers();
 }
 
 void TriangleApplication::createVkInstance() {
@@ -164,6 +167,11 @@ void TriangleApplication::mainLoop() {
 
 void TriangleApplication::cleanUp() {
     // Enter clean up code here
+
+    // Clean up the framebuffers
+    for (auto framebuffer : this->swapChainFramebuffers){
+        vkDestroyFramebuffer(this->device, framebuffer, nullptr);
+    }
 
     // Clean up the graphics pipeline
     vkDestroyPipeline(this->device, this->graphicsPipeline, nullptr);
@@ -902,6 +910,29 @@ void TriangleApplication::createGraphicsPipeline() {
 
     vkDestroyShaderModule(this->device, fragShaderModule, nullptr);
     vkDestroyShaderModule(this->device, vertShaderModule, nullptr);
+}
+
+void TriangleApplication::createFrameBuffers(){
+    this->swapChainFramebuffers.resize(this->swapChainImageViews.size());
+
+    for(size_t i = 0; i < this->swapChainImageViews.size(); i++){
+        VkImageView attachments[] {
+            this->swapChainImageViews[i]
+        };
+
+        VkFramebufferCreateInfo framebufferInfo = {};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = this->renderPass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = attachments;
+        framebufferInfo.width = this->swapChainImageExtent.width;
+        framebufferInfo.height = this->swapChainImageExtent.height;
+        framebufferInfo.layers = 1;
+
+        if(vkCreateFramebuffer(this->device, &framebufferInfo, nullptr, &this->swapChainFramebuffers[i]) != VK_SUCCESS){
+            throw std::runtime_error("Failed to create framebuffer");
+        }
+    }
 }
 
 void TriangleApplication::destroyVkDebugMessenger(

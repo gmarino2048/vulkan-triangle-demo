@@ -34,6 +34,8 @@ namespace triangle {
             VkPipelineLayout pipelineLayout;
             VkPipeline graphicsPipeline;
 
+            std::vector<VkFramebuffer> swapChainFramebuffers;
+
             bool validationLayersEnabled;
             std::vector<const char*> validationLayers;
 
@@ -92,6 +94,8 @@ namespace triangle {
             std::vector<char> readFile(const std::string& filename);
             VkShaderModule createShaderModule(const std::vector<char>& code);
             void createGraphicsPipeline();
+
+            void createFrameBuffers();
 
             void setupDebugMessenger();
             void populateDebugMessengerCreateInfo(
