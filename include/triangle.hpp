@@ -30,6 +30,8 @@ namespace triangle {
 
             std::vector<VkImageView> swapChainImageViews;
 
+            VkPipelineLayout pipelineLayout;
+
             bool validationLayersEnabled;
             std::vector<const char*> validationLayers;
 
