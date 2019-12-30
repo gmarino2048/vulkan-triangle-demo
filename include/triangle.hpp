@@ -1,12 +1,29 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
+#include <array>
 #include <string>
 #include <vector>
 #include <optional>
 
 namespace triangle {
     class TriangleApplication {
+        public:
+            struct Vertex{
+                glm::vec2 pos;
+                glm::vec3 color;
+
+                static VkVertexInputBindingDescription getBindingDescription();
+                static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions();
+            };
+
+            const std::vector<Vertex> vertices = {
+                {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+                {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+                {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+            };
+
         private:
             int maxFramesInFlight;
             std::string title;
@@ -47,6 +64,9 @@ namespace triangle {
 
             VkCommandPool commandPool;
             std::vector<VkCommandBuffer> commandBuffers;
+
+            VkBuffer vertexBuffer;
+            VkDeviceMemory vertexBufferMemory;
 
             bool validationLayersEnabled;
             std::vector<const char*> validationLayers;
@@ -125,6 +145,9 @@ namespace triangle {
             void populateDebugMessengerCreateInfo(
                 VkDebugUtilsMessengerCreateInfoEXT& createInfo
             );
+
+            void createVertexBuffers();
+            uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
             VkResult createVkDebugMessenger(
                 const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
