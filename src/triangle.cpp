@@ -95,7 +95,21 @@ void TriangleApplication::drawFrame(){
     vkWaitForFences(this->device, 1, &this->inFlightFences[this->currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(this->device, this->swapChain, UINT64_MAX, this->imageAvailableSemaphores[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(
+        this->device, 
+        this->swapChain, 
+        UINT64_MAX, 
+        this->imageAvailableSemaphores[this->currentFrame], 
+        VK_NULL_HANDLE, &imageIndex
+    );
+
+    if(result == VK_ERROR_OUT_OF_DATE_KHR){
+        this->recreateSwapChain();
+        return;
+    }
+    else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
+        throw std::runtime_error("Failed to acquire the swapchain!");
+    }
 
     if(this->imagesInFlight[imageIndex] != VK_NULL_HANDLE){
         vkWaitForFences(this->device, 1, &this->imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
@@ -135,7 +149,16 @@ void TriangleApplication::drawFrame(){
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr;
 
-    vkQueuePresentKHR(this->presentQueue, &presentInfo);
+    result = vkQueuePresentKHR(this->presentQueue, &presentInfo);
+
+    if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || this->framebufferResized){
+        this->framebufferResized = false;
+        this->recreateSwapChain();
+    }
+    else if (result != VK_SUCCESS){
+        throw std::runtime_error("Failed to present swap chain image");
+    }
+    
     vkQueueWaitIdle(this->presentQueue);
 
     this->currentFrame = (this->currentFrame + 1) % this->maxFramesInFlight;
@@ -209,7 +232,7 @@ void TriangleApplication::initWindow() {
 
     // Configure the glfw window
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // No OpenGL Context
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);   // Not resizeable
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);    // Is resizeable
 
     // Create the window instance
     this->window = glfwCreateWindow(
@@ -219,6 +242,13 @@ void TriangleApplication::initWindow() {
         nullptr,
         nullptr
     );
+    glfwSetWindowUserPointer(this->window, this);
+    glfwSetFramebufferSizeCallback(this->window, this->framebufferResizedCallback);
+}
+
+void TriangleApplication::framebufferResizedCallback(GLFWwindow* window, int width, int height){
+    auto app = reinterpret_cast<TriangleApplication*>(glfwGetWindowUserPointer(window));
+    app->framebufferResized = true;
 }
 
 void TriangleApplication::mainLoop() {
@@ -234,6 +264,9 @@ void TriangleApplication::mainLoop() {
 void TriangleApplication::cleanUp() {
     // Enter clean up code here
 
+    // Clean up the swapchain
+    this->cleanUpSwapChain();
+
     // Clean up the semaphores
     for(size_t i = 0; i < this->maxFramesInFlight; i++){
         vkDestroySemaphore(this->device, this->imageAvailableSemaphores[i], nullptr);
@@ -243,32 +276,6 @@ void TriangleApplication::cleanUp() {
 
     // Clean up the command pool
     vkDestroyCommandPool(this->device, this->commandPool, nullptr);
-
-    // Clean up the framebuffers
-    for (auto framebuffer : this->swapChainFramebuffers){
-        vkDestroyFramebuffer(this->device, framebuffer, nullptr);
-    }
-
-    // Clean up the graphics pipeline
-    vkDestroyPipeline(this->device, this->graphicsPipeline, nullptr);
-
-    // Clean up the graphics pipeline layout
-    vkDestroyPipelineLayout(this->device, this->pipelineLayout, nullptr);
-
-    // Clean up the render pass
-    vkDestroyRenderPass(this->device, this->renderPass, nullptr);
-
-    // Clean up the image views
-    for (auto imageView : this->swapChainImageViews){
-        vkDestroyImageView(
-            this->device,
-            imageView,
-            nullptr
-        );
-    }
-
-    // Destroy the swapchain
-    vkDestroySwapchainKHR(this->device, this->swapChain, nullptr);
 
     // Clean up the logical device
     vkDestroyDevice(this->device, nullptr);
@@ -646,6 +653,44 @@ void TriangleApplication::createSwapChain() {
     this->swapChainImageExtent = swapExtent;
 }
 
+void TriangleApplication::cleanUpSwapChain(){
+    for(size_t i = 0; i < this->swapChainFramebuffers.size(); i++){
+        vkDestroyFramebuffer(this->device, this->swapChainFramebuffers[i], nullptr);
+    }
+
+    vkFreeCommandBuffers(this->device, this->commandPool, static_cast<uint32_t>(this->commandBuffers.size()), this->commandBuffers.data());
+
+    vkDestroyPipeline(this->device, this->graphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(this->device, this->pipelineLayout, nullptr);
+    vkDestroyRenderPass(this->device, this->renderPass, nullptr);
+
+    for(size_t i = 0; i < this->swapChainImageViews.size(); i++){
+        vkDestroyImageView(this->device, this->swapChainImageViews[i], nullptr);
+    }
+
+    vkDestroySwapchainKHR(this->device, this->swapChain, nullptr);
+}
+
+void TriangleApplication::recreateSwapChain(){
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(this->window, &width, &height);
+    while(width == 0 || height == 0){
+        glfwGetFramebufferSize(this->window, &width, &height);
+        glfwWaitEvents();
+    }
+
+    vkDeviceWaitIdle(this->device);
+
+    this->cleanUpSwapChain();
+    
+    this->createSwapChain();
+    this->createImageViews();
+    this->createRenderPass();
+    this->createGraphicsPipeline();
+    this->createFrameBuffers();
+    this->createCommandBuffers();
+}
+
 TriangleApplication::SwapChainSupportDetails TriangleApplication::querySwapChainSupport(const VkPhysicalDevice device){
     SwapChainSupportDetails details;
 
@@ -716,7 +761,13 @@ VkExtent2D TriangleApplication::chooseSwapExtent(const VkSurfaceCapabilitiesKHR&
         return capabilities.currentExtent;
     }
     else {
-        VkExtent2D actualExtent = {0, 0};
+        int width, height;
+        glfwGetFramebufferSize(this->window, &width, &height);
+
+        VkExtent2D actualExtent = {
+            static_cast<uint32_t>(width), 
+            static_cast<uint32_t>(height)
+        };
 
         actualExtent.width = std::max(
             capabilities.minImageExtent.width, 

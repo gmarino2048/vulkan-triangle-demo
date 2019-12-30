@@ -24,6 +24,8 @@ namespace triangle {
             std::vector<VkFence> imagesInFlight;
             size_t currentFrame;
 
+            bool framebufferResized = false;
+
             std::vector<const char*> deviceExtensions;
 
             VkSurfaceKHR surface;
@@ -69,6 +71,8 @@ namespace triangle {
 
             void drawFrame();
 
+            static void framebufferResizedCallback(GLFWwindow* window, int width, int height);
+
             void createVkInstance();
             bool checkValidationLayerSupport();
             std::vector<const char*> getRequiredExtensions();
@@ -90,6 +94,8 @@ namespace triangle {
             void createLogicalDevice();
 
             void createSwapChain();
+            void recreateSwapChain();
+            void cleanUpSwapChain();
             struct SwapChainSupportDetails{
                 VkSurfaceCapabilitiesKHR capabilities;
                 std::vector<VkSurfaceFormatKHR> formats;
